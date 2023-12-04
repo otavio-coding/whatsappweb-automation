@@ -1,0 +1,6 @@
+Test
+*Test*
+test@exemplo.com
+Testing symbols ã?!á
+
+End of test.
