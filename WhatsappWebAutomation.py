@@ -43,8 +43,9 @@ def main():
     # Define the CSV file containing the phone numbers and the phone row
     csv_file = 'ContactList.csv'
     phone_row = 2
-
-    message = open('message.txt').read()
+    
+    # Gets message from message.txt
+    message = open('message.txt', 'r', encoding='utf-8').read()
 
     # Create empty list to store the phones that couldn't be reached
     phones_that_failed = []
