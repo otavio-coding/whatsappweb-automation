@@ -24,7 +24,7 @@ This Python script automates sending bulk messages on WhatsApp using Selenium. I
     Replace `'ContactList.csv'` with the path to your CSV file containing contact numbers.
 
 5. **Define Message:**
-    Edit the `message` variable in the script with the message you want to send. You can use placeholders like `[Start Date]` and customize as needed.
+    Edit the `message.txt` file with the message you want to send.
 
 6. **Run the Script:**
     Execute the script:
