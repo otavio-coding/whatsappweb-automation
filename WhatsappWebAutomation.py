@@ -24,7 +24,10 @@ def send_message(driver, phone, message):
     while len(driver.find_elements(By.ID, 'side')) < 1:
         time.sleep(1)
 
-    time.sleep(5)
+    while len(driver.find_elements(By.LINK_TEXT, 'Iniciando conversa')) > 0:
+        time.sleep(1)
+
+    time.sleep(3)
     send_message_button = driver.find_element(By.XPATH,
                                               '//*[@id="main"]/footer/div[1]/div/span[2]'
                                               '/div/div[2]/div[2]/button/span')
