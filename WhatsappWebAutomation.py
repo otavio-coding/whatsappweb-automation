@@ -13,6 +13,7 @@ from selenium.webdriver.common.by import By
 
 
 def qrcode_auth(driver):
+    """Waits for the user to scan a QR code"""
     try:
         driver.get("https://web.whatsapp.com/")
         while len(driver.find_elements(By.ID, 'side')) < 1:
@@ -23,6 +24,7 @@ def qrcode_auth(driver):
 
 
 def send_message(driver, phone, message):
+    """Send message defined in message.txt to the phone using selenium"""
     message = urllib.parse.quote(message)
     link = f"https://web.whatsapp.com/send?phone={phone}&text={message}"
     driver.get(link)
@@ -38,12 +40,14 @@ def send_message(driver, phone, message):
 
 
 def load_config(file_path='config.json'):
+    """Reads the config file"""
     with open(file_path, 'r') as config_file:
         config = json.load(config_file)
     return config
 
 
 def delete_chrome_profile(profile_path):
+    """Deletes the path of the cached qr code so the user can scan a new one"""
     try:
         shutil.rmtree(profile_path, ignore_errors=True)
         print("Old QR settings cleaned")
@@ -52,6 +56,7 @@ def delete_chrome_profile(profile_path):
 
 
 def start_menu():
+    """This function collects data on whether the user wants to scan a QR code"""
     print("""
      ██████╗██╗  ██╗██████╗  ██████╗ ███╗   ███╗███████╗
     ██╔════╝██║  ██║██╔══██╗██╔═══██╗████╗ ████║██╔════╝
@@ -65,8 +70,6 @@ def start_menu():
     ██╔══██║██║   ██║   ██║   ██║   ██║ ███╔╝  ██╔══██║██╔═══╝
     ██║  ██║╚██████╔╝   ██║   ╚██████╔╝███████╗██║  ██║██║
     ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝
-
-    Not intended for spamming use consented data only.
     """)
 
     user = input('PRESS ENTER TO START')
@@ -95,13 +98,15 @@ def start_menu():
 
 def main():
     try:
-        # If new qr code is requested. Clean up the profile directory
+        option = start_menu()
+        if option is None:
+            return
+        # If new QR code is requested. Clean up the profile directory
         profile_path = os.path.expanduser('~') + '\\AppData\\Local\\Google\\Chrome\\User Data\\Wtsp'
-        if start_menu() == "new_qr":
+        if option == "new_qr":
             print("Cleaning up old QR settings")
             delete_chrome_profile(profile_path)
-        if start_menu() == "":
-            return
+
         CHROME_PROFILE_PATH = 'user-data-dir=' + profile_path
 
         options = webdriver.ChromeOptions()
@@ -120,8 +125,8 @@ def main():
         phones_that_failed = []
 
         if qrcode_auth(driver) != 0:
-
             print("QR code failed")
+
         # Opens the web whatsapp page and waits for the user to scan the QR code
         # if you have already done it recently just wait for one or two seconds
         else:
