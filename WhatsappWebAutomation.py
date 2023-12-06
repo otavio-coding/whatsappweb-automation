@@ -5,6 +5,25 @@ import urllib.parse
 import re
 import csv
 import os
+import json
+
+
+def print_logo():
+    print("""
+ ██████╗██╗  ██╗██████╗  ██████╗ ███╗   ███╗███████╗
+██╔════╝██║  ██║██╔══██╗██╔═══██╗████╗ ████║██╔════╝
+██║     ███████║██████╔╝██║   ██║██╔████╔██║█████╗
+██║     ██╔══██║██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝
+╚██████╗██║  ██║██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗
+ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝
+ █████╗ ██╗   ██╗████████╗ ██████╗ ███████╗ █████╗ ██████╗
+██╔══██╗██║   ██║╚══██╔══╝██╔═══██╗╚══███╔╝██╔══██╗██╔══██╗
+███████║██║   ██║   ██║   ██║   ██║  ███╔╝ ███████║██████╔╝
+██╔══██║██║   ██║   ██║   ██║   ██║ ███╔╝  ██╔══██║██╔═══╝
+██║  ██║╚██████╔╝   ██║   ╚██████╔╝███████╗██║  ██║██║
+╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝
+
+""")
 
 
 def qrcode_auth(driver):
@@ -36,45 +55,58 @@ def send_message(driver, phone, message):
     time.sleep(2)
 
 
+def load_config(file_path='config.json'):
+    with open(file_path, 'r') as config_file:
+        config = json.load(config_file)
+    return config
+
+
 def main():
+    print_logo()
+    user = input('PRESS ENTER TO START SENDING THE MESSAGES')
+    config = load_config()
     CHROME_PROFILE_PATH = 'user-data-dir=' + os.path.expanduser('~') + '\\AppData\\Local\\Google' \
-                                                                       '\\Chrome\\User Data\\Wtsp'
+                                                                       '\\Chrome\\User Data\\Wtsp' + user
     options = webdriver.ChromeOptions()
     options.add_argument(CHROME_PROFILE_PATH)
     driver = webdriver.Chrome(options=options)
 
     # Define the CSV file containing the phone numbers and the phone row
-    csv_file = 'ContactList.csv'
-    phone_row = 2
+    csv_file = config["csv_file"]
+    phone_row = config["phone_row"]
+    message_file = "message.txt"
     
-    # Gets message from message.txt
-    message = open('message.txt', 'r', encoding='utf-8').read()
+    # Gets message from the message file
+    message = open(message_file, 'r', encoding='utf-8').read()
 
     # Create empty list to store the phones that couldn't be reached
     phones_that_failed = []
 
+    if qrcode_auth(driver) != 0:
+
+        print("QR code failed")
     # Opens the web whatsapp page and waits for the user to scan the QR code
     # if you have already done it recently just wait for one or two seconds
-    if qrcode_auth(driver) == 0:
-
+    else:
         # If QR scanning succeeds read the csv file with the contacts and star sending the messages
         with open(csv_file, 'r', encoding='utf-8') as file:
             reader = csv.reader(file, delimiter=';')
             next(reader)  # skip header row
             for row in reader:
                 phone = re.sub(r'\D', '', row[phone_row])
-                print(phone)
                 try:
                     send_message(driver, phone, message)
                 except Exception as e:
                     phones_that_failed.append(phone)
-                    print(e)
-    else:
-        print("QR code failed")
+                    print("Failed to send message to: " + phone)
 
     print("Finished sending the messages\n"
           "Phones that failed: ")
     print(phones_that_failed)
+    input("You can close this window")
+
+    while True:
+        pass
 
 
 if __name__ == '__main__':
