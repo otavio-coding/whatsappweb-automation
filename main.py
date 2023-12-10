@@ -6,6 +6,7 @@ import time
 import urllib.parse
 import shutil
 import threading
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import ImageTk
@@ -28,7 +29,8 @@ def qrcode_auth(driver):
         while len(driver.find_elements(By.ID, 'side')) < 1:
             time.sleep(1)
         return {"value": 0, "text": "Qr code scanned successfully"}
-    except:
+    except Exception as e:
+        tk.messagebox.showerror("Error", f"Program Error:{e}\nPlease restart the app.")
         return {"value": 1, "text": "QR code scanning failed"}
 
 
@@ -37,8 +39,8 @@ def delete_chrome_profile(profile_path):
     try:
         shutil.rmtree(profile_path, ignore_errors=True)
         return "Old QR settings cleaned"
-    except:
-        return "Couldn't generate new QR, contact developer"
+    except Exception as e:
+        tk.messagebox.showerror("Error", f"Program Error:{e}\nPlease restart the app.")
 
 
 def send_message(driver, phone, message, label, max_wait):
@@ -139,6 +141,7 @@ def main(option, label, success_label, failure_label, pb):
     except Exception as e:
         tk.messagebox.showerror("Error", f"Program Error:{e}\nPlease restart the app.")
         root.quit()
+
 
 def load_frame1():
     frame1.tkraise()
