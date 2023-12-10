@@ -29,7 +29,7 @@ This Python script automates sending bulk messages on WhatsApp using Selenium. I
 6. **Run the Script:**
     Execute the script:
     ```bash
-    python WhatsappWebAutomation.py
+    python main.py
     ```
 
 7. **QR Code Authentication:**
