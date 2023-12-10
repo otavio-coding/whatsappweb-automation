@@ -15,7 +15,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 
-def load_config(file_path='config.json'):
+def load_config(file_path='inputFiles/config.json'):
     """Reads the config file."""
     with open(file_path, 'r') as config_file:
         config = json.load(config_file)
@@ -43,39 +43,70 @@ def delete_chrome_profile(profile_path):
         tk.messagebox.showerror("Error", f"Program Error:{e}\nPlease restart the app.")
 
 
-def send_message(driver, phone, message, label, max_wait):
-    """Send message defined in message.txt to the phone using selenium."""
+def send_message(driver, phone, message, label):
+    """Send message defined in message.txt to the phone using selenium.
+    Due to whatsapp web unpredictability, we have to do multiple check on what's available on the screen"""
+
+    def is_number_invalid():
+        return len(driver.find_elements(By.CSS_SELECTOR, invalid_number_selector)) > 0
+
+    def handle_invalid_number():
+        label.config(text='*****-**** is an invalid number.')
+        time.sleep(2)
+
+    def is_send_button_present():
+        return driver.find_element(By.XPATH, send_button_XPATH)
+
+    def click_send_button():
+        send_message_button = driver.find_element(By.XPATH, send_button_XPATH)
+        send_message_button.click()
+        label.config(text='Message sent to: *****-****')
+        time.sleep(1)
+
+    # define the variables we'll be checking on the page
+    invalid_number_selector = "div.f8jlpxt4.iuhl9who"  # Appears as a pop-up box if the number is invalid.
+    starting_chat_selector = 'div.du8bjn1j.p9fp32ui.m1e7cby3.htjsae3x.ljrqcn24'  # Appears when the chat is loading.
+    send_button_XPATH = '//*[@id="main"]/footer/div[1]/div/span[2]/div/div[2]/div[2]/button/span'
+
     label.config(text='Sending message to: *****-****. Please wait...')
     message = urllib.parse.quote(message)
     link = f"https://web.whatsapp.com/send?phone={phone}&text={message}"
     driver.get(link)
 
-    # setting time limits for the message being sent.
-    start_time = time.time()
-
-    # waits until loading is complete
     while len(driver.find_elements(By.ID, 'side')) < 1:
         time.sleep(1)
 
-    # waits until the chat box is available if max_time_limit is reached breaks the loop.
     while len(driver.find_elements(By.ID, 'main')) < 1:
-        if time.time() - start_time > max_wait:
-            label.config(text='Time limit reached. Message to: *****-**** failed')
-            time.sleep(2)
-            return 1
-        time.sleep(1)
 
-    # finds the sending message button and clicks.
-    send_message_button = driver.find_element(By.XPATH, '//*[@id="main"]/footer/div[1]/div/span[2]'
-                                                        '/div/div[2]/div[2]/button/span')
-    send_message_button.click()
-    label.config(text='Message sent to: *****-****')
-    time.sleep(2)
-    return 0
+        # wait until the chat box is available.
+        if len(driver.find_elements(By.CSS_SELECTOR, starting_chat_selector)) > 0:
+
+            while len(driver.find_elements(By.CSS_SELECTOR, starting_chat_selector)) > 0:
+                time.sleep(1)
+
+            if is_number_invalid():
+                handle_invalid_number()
+                return 1
+
+            elif is_send_button_present():
+                click_send_button()
+                return 0
+
+        if is_number_invalid():
+            handle_invalid_number()
+            return 1
+
+    if is_number_invalid():
+        handle_invalid_number()
+        return 1
+
+    if is_send_button_present():
+        click_send_button()
+        return 0
 
 
 def log_failures(phones_that_failed):
-    with open('phones_that_failed.csv', 'w') as log:
+    with open('outputFiles/phones_that_failed.csv', 'w', newline="") as log:
         writer = csv.writer(log, delimiter=';')
         writer.writerow(["Failed Phones"])
         writer.writerows([[phone] for phone in phones_that_failed])
@@ -99,8 +130,7 @@ def main(option, label, success_label, failure_label, pb):
         config = load_config()
         csv_file = config["csv_file"]
         phone_row = config["phone_row"]
-        max_wait = config["max_wait"]
-        message_file = "message.txt"
+        message_file = "inputFiles/message.txt"
 
         # Gets message from the message file.
         message = open(message_file, 'r', encoding='utf-8').read()
@@ -123,7 +153,7 @@ def main(option, label, success_label, failure_label, pb):
                 next(reader)  # skip header row
                 for row in reader:
                     phone = re.sub(r'\D', '', row[phone_row])
-                    if send_message(driver, phone, message, label, max_wait) == 0:
+                    if send_message(driver, phone, message, label) == 0:
                         success_count += 1
                         success_label.config(text="Messages Sent: " + str(success_count))
                     else:
@@ -176,7 +206,6 @@ def load_frame1():
 
 
 def load_frame2():
-
     """Loads the second frame with two buttons. The button 'Scan New QR' evokes the load_frame3 with the parameter 0
     and the button 'Continue'  with the parameter 1"""
     frame2.tkraise()
@@ -218,7 +247,7 @@ def load_frame2():
         activebackground="#274245",
         activeforeground="#EEEBDB",
         command=lambda: load_frame3(1)
-    ).pack(pady=20, ipadx=35,)
+    ).pack(pady=20, ipadx=35, )
 
 
 def load_frame3(option):
