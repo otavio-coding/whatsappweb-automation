@@ -44,24 +44,22 @@ def delete_chrome_profile(profile_path):
 
 
 def send_message(driver, phone, message, label):
-    """Send message defined in message.txt to the phone using selenium.
-    Due to whatsapp web unpredictability, we have to do multiple check on what's available on the screen"""
+    """Send message defined in message.txt to the phone using selenium."""
 
     def is_number_invalid():
         return len(driver.find_elements(By.CSS_SELECTOR, invalid_number_selector)) > 0
 
     def handle_invalid_number():
         label.config(text='*****-**** is an invalid number.')
-        time.sleep(2)
 
     def is_send_button_present():
-        return driver.find_element(By.XPATH, send_button_XPATH)
+        return len(driver.find_elements(By.XPATH, send_button_XPATH)) > 0
 
     def click_send_button():
         send_message_button = driver.find_element(By.XPATH, send_button_XPATH)
         send_message_button.click()
         label.config(text='Message sent to: *****-****')
-        time.sleep(1)
+        time.sleep(2)
 
     # define the variables we'll be checking on the page
     invalid_number_selector = "div.f8jlpxt4.iuhl9who"  # Appears as a pop-up box if the number is invalid.
@@ -73,20 +71,20 @@ def send_message(driver, phone, message, label):
     link = f"https://web.whatsapp.com/send?phone={phone}&text={message}"
     driver.get(link)
 
+    # Due to whatsapp website unpredictability, we have to do multiple checkS on what's available on the screen
+
     while len(driver.find_elements(By.ID, 'side')) < 1:
         time.sleep(1)
-
+    time.sleep(1)
     while len(driver.find_elements(By.ID, 'main')) < 1:
-
         # wait until the chat box is available.
         if len(driver.find_elements(By.CSS_SELECTOR, starting_chat_selector)) > 0:
-
             while len(driver.find_elements(By.CSS_SELECTOR, starting_chat_selector)) > 0:
                 time.sleep(1)
 
             if is_number_invalid():
                 handle_invalid_number()
-                return 1
+                return -1
 
             elif is_send_button_present():
                 click_send_button()
@@ -94,13 +92,23 @@ def send_message(driver, phone, message, label):
 
         if is_number_invalid():
             handle_invalid_number()
-            return 1
+            return -1
+
+        elif is_send_button_present():
+            click_send_button()
+            return 0
 
     if is_number_invalid():
-        handle_invalid_number()
-        return 1
+        if is_send_button_present():
+            time.sleep(1)
+            click_send_button()
+            return 0
+        else:
+            handle_invalid_number()
+            return -1
 
     if is_send_button_present():
+        time.sleep(1)
         click_send_button()
         return 0
 
@@ -153,10 +161,15 @@ def main(option, label, success_label, failure_label, pb):
                 next(reader)  # skip header row
                 for row in reader:
                     phone = re.sub(r'\D', '', row[phone_row])
-                    if send_message(driver, phone, message, label) == 0:
-                        success_count += 1
-                        success_label.config(text="Messages Sent: " + str(success_count))
-                    else:
+                    try:
+                        if send_message(driver, phone, message, label) == 0:
+                            success_count += 1
+                            success_label.config(text="Messages Sent: " + str(success_count))
+                        else:
+                            phones_that_failed.append(phone)
+                            failure_count += 1
+                            failure_label.config(text="Failed: " + str(failure_count))
+                    except Exception:
                         phones_that_failed.append(phone)
                         failure_count += 1
                         failure_label.config(text="Failed: " + str(failure_count))
@@ -283,7 +296,7 @@ def load_frame3(option):
         bg=bg_color,
         fg="#EEEBDB",
         font=("Calibri bold", 14))
-    success_label.pack(pady=20)
+    success_label.pack(pady=10)
 
     failure_label = tk.Label(
         frame3,
@@ -291,7 +304,20 @@ def load_frame3(option):
         bg=bg_color,
         fg="#EEEBDB",
         font=("Calibri bold", 14))
-    failure_label.pack(pady=20)
+    failure_label.pack(pady=10)
+
+    stop_button = tk.Button(
+        frame3,
+        text="EXIT",
+        font=("Calibri", 12, "bold"),
+        bg="#EEEBDB",
+        fg="#274245",
+        cursor="hand2",
+        activebackground="#274245",
+        activeforeground="#EEEBDB",
+        command=lambda: root.quit()
+    )
+    stop_button.pack()
 
     threading.Thread(target=lambda: main(option, label, success_label, failure_label, pb)).start()
 
